@@ -1,36 +1,36 @@
 const UserServiceTokenAuthentication = require("../user/services/UserServiceTokenAuthentication");
-const PembelianValidators = require("./PembelianValidators");
+const TransaksiValidators = require("./TransaksiValidators");
 const BaseValidatorRun = require("../base/validators/BaseValidatorRun");
-const PembelianServiceCreate = require("./services/PembelianServiceCreate");
+const TransaksiServiceCreate = require("./services/TransaksiServiceCreate");
 const BaseValidatorFields = require("../base/validators/BaseValidatorFields");
 const { query, param } = require("express-validator");
-const PembelianServiceList = require("./services/PembelianServiceList");
-const PembelianServiceGet = require("./services/PembelianServiceGet");
-const PembelianServiceGetItemBeli = require("./services/PembelianServiceGetItemBeli");
+const TransaksiServiceList = require("./services/TransaksiServiceList");
+const TransaksiServiceGet = require("./services/TransaksiServiceGet");
 const PelangganServiceGet = require("../pelanggan/services/PelangganServiceGet");
-const PembelianServiceFakturExcel = require("./services/PembelianServiceFakturExcel");
-const PembelianServiceReportPeriod = require("./services/PembelianServiceReportPeriod");
-const PembelianServiceReportPeriodExcel = require("./services/PembelianServiceReportPeriodExcel");
+const TransaksiServiceFakturExcel = require("./services/TransaksiServiceFakturExcel");
+const TransaksiServiceReport = require("./services/TransaksiServiceReport");
+const TransaksiServiceReportExcel = require("./services/TransaksiServiceReportExcel");
+const TransaksiServiceGetItemBarang = require("./services/TransaksiServiceGetItembarang");
 
-const PembelianControllers = require("express").Router();
+const TransaksiControllers = require("express").Router();
 
-PembelianControllers.post(
+TransaksiControllers.post(
   "/",
   [
     UserServiceTokenAuthentication,
-    PembelianValidators.faktur(),
-    PembelianValidators.tanggal(),
-    PembelianValidators.total(),
-    // PembelianValidators.kode_pelanggan(),
-    PembelianValidators.dibayar(),
-    PembelianValidators.kembali(),
-    PembelianValidators.items.self(),
-    PembelianValidators.items.inner.kode_barang(),
-    PembelianValidators.items.inner.nama_barang(),
+    TransaksiValidators.faktur(),
+    TransaksiValidators.tanggal(),
+    TransaksiValidators.total(),
+    // TransaksiValidators.kode_pelanggan(),
+    TransaksiValidators.dibayar(),
+    TransaksiValidators.kembali(),
+    TransaksiValidators.items.self(),
+    TransaksiValidators.items.inner.kode_barang(),
+    TransaksiValidators.items.inner.nama_barang(),
     BaseValidatorRun(),
   ],
   async (req, res) => {
-    const pembelian = await PembelianServiceCreate(
+    const transaksi = await TransaksiServiceCreate(
       req.body.faktur,
       req.body.tanggal,
       req.body.total,
@@ -39,11 +39,11 @@ PembelianControllers.post(
       // req.body.kode_pelanggan,
       req.body.items
     );
-    res.status(201).json(pembelian);
+    res.status(201).json(transaksi);
   }
 );
 
-PembelianControllers.get(
+TransaksiControllers.get(
   "/",
   [
     UserServiceTokenAuthentication,
@@ -52,46 +52,46 @@ PembelianControllers.get(
     BaseValidatorRun(),
   ],
   async (req, res) => {
-    const daftarPembelian = await PembelianServiceList(
+    const daftarTransaksi = await TransaksiServiceList(
       req.query.terms,
       req.query.page
     );
-    return res.status(200).json(daftarPembelian);
+    return res.status(200).json(daftarTransaksi);
   }
 );
 
-PembelianControllers.get(
+TransaksiControllers.get(
   "/:faktur",
   [
     UserServiceTokenAuthentication,
-    PembelianValidators.faktur(param, false),
+    TransaksiValidators.faktur(param, false),
     BaseValidatorRun(),
   ],
   async (req, res) => {
-    const pembelian = await PembelianServiceGet(
+    const transaksi = await TransaksiServiceGet(
       "faktur",
       req.params.faktur,
       false
     );
-    const items = await PembelianServiceGetItemBeli(
+    const items = await TransaksiServiceGetItemBarang(
       "faktur",
       req.params.faktur,
       true
     );
 
-    return res.status(200).json({ ...pembelian, items });
+    return res.status(200).json({ ...transaksi, items });
   }
 );
 
-PembelianControllers.post(
+TransaksiControllers.post(
   "/:faktur/faktur-excel",
   [
     UserServiceTokenAuthentication,
-    PembelianValidators.faktur(param, false),
+    TransaksiValidators.faktur(param, false),
     BaseValidatorRun(),
   ],
   async (req, res) => {
-    const pembelian = await PembelianServiceGet(
+    const transaksi = await TransaksiServiceGet(
       "faktur",
       req.params.faktur,
       false
@@ -101,7 +101,7 @@ PembelianControllers.post(
       "kode_pelanggan",
       pembelian.kode_pelanggan
     );
-    const items = await PembelianServiceGetItemBeli(
+    const items = await TransaksiServiceGetItemBarang(
       "faktur",
       req.params.faktur,
       true
@@ -116,19 +116,19 @@ PembelianControllers.post(
       `${req.params.faktur}-${new Date().getTime()}.xlsx`
     );
 
-    const xlsx = await PembelianServiceFakturExcel(pembelian, pelanggan, items);
+    const xlsx = await TransaksiServiceFakturExcel(transaksi, pelanggan, items);
     await xlsx.write(res);
     return res.end();
   }
 );
 
-PembelianControllers.post(
-  "/report-period-excel",
+TransaksiControllers.post(
+  "/report-excel",
   [
     UserServiceTokenAuthentication,
-    PembelianValidators.reporting.terms(),
-    PembelianValidators.reporting.startDate(),
-    PembelianValidators.reporting.endDate(),
+    TransaksiValidators.reporting.terms(),
+    TransaksiValidators.reporting.startDate(),
+    TransaksiValidators.reporting.endDate(),
     BaseValidatorRun(),
   ],
   async (req, res) => {
@@ -141,13 +141,13 @@ PembelianControllers.post(
       `Report Pembelian - ${req.body.startDate} sd ${req.body.endDate}.xlsx`
     );
 
-    const results = await PembelianServiceReportPeriod(
+    const results = await TransaksiServiceReport(
       req.body.startDate,
       req.body.endDate,
       req.body.terms
     );
 
-    const xlsx = await PembelianServiceReportPeriodExcel(results);
+    const xlsx = await TransaksiServiceReportExcel(results);
     await xlsx.write(res);
     return res.end();
   }

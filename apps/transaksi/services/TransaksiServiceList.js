@@ -1,12 +1,12 @@
 const BaseServiceQueryBuilder = require("../../base/services/BaseServiceQueryBuilder");
 const BaseServicePaginator = require("../../base/services/BaseServicePaginator");
-const { PEMBELIAN_CONFIG_MAIN_TABLE } = require("../config");
+const { TRANSAKSI_CONFIG_MAIN_TABLE } = require("../config");
 
-const PembelianServiceList = async (terms, page) => {
-  const queryBuilder = BaseServiceQueryBuilder(PEMBELIAN_CONFIG_MAIN_TABLE);
+const TransaksiServiceList = async (terms, page) => {
+  const queryBuilder = BaseServiceQueryBuilder(TRANSAKSI_CONFIG_MAIN_TABLE);
 
   if (terms) {
-    queryBuilder.whereILike("faktur", `%${terms}%`);
+    queryBuilder.whereILike("NO_FAKTUR", `%${terms}%`);
   }
 
   return {
@@ -15,4 +15,4 @@ const PembelianServiceList = async (terms, page) => {
   };
 };
 
-module.exports = PembelianServiceList;
+module.exports = TransaksiServiceList;

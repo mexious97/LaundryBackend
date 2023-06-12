@@ -1,25 +1,25 @@
 const _ = require("lodash");
 const { body } = require("express-validator");
-const PembelianServiceGet = require("./services/PembelianServiceGet");
+const TransaksiServiceGet = require("./services/TransaksiServiceGet");
 const BarangServiceGet = require("../barang/services/BarangServiceGet");
 const BaseValidatorFields = require("../base/validators/BaseValidatorFields");
 const BaseValidatorHandleUndefined = require("../base/validators/BaseValidatorHandleUndefined");
 const PelangganValidators = require("../pelanggan/PelangganValidators");
 const BarangValidators = require("../barang/BarangValidators");
 
-const PembelianValidators = {
-  faktur: (location = body, forCreate = true, field = "faktur") => {
+const TransaksiValidators = {
+  faktur: (location = body, forCreate = true, field = "no_faktur") => {
     return location(field)
       .notEmpty()
-      .withMessage("Faktur wajib diisi.")
+      .withMessage("No Faktur wajib diisi.")
       .bail()
       .trim()
       .custom(async (value) => {
-        const pembelian = await PembelianServiceGet("faktur", value);
-        if (forCreate && pembelian) {
-          return Promise.reject("Faktur pembelian sudah pernah dibuat.");
+        const transaksi = await TransaksiServiceGet("no_faktur", value);
+        if (forCreate && transaksi) {
+          return Promise.reject("Faktur transaksi sudah pernah dibuat.");
         } else if (!forCreate && !pembelian) {
-          return Promise.reject("Faktur pembelian tidak ada.");
+          return Promise.reject("No Faktur Transaksi tidak ada.");
         }
 
         return Promise.resolve(true);
@@ -75,7 +75,7 @@ const PembelianValidators = {
     self: (location = body, field = "items") => {
       return location(field)
         .notEmpty()
-        .withMessage("Item pembelian wajib.")
+        .withMessage("Item Transaksi wajib.")
         .bail()
         .isArray({ min: 1 })
         .withMessage(
@@ -106,15 +106,15 @@ const PembelianValidators = {
           });
       },
 
-      subtotal: (location = body, field = "items.*.subtotal") => {
+      qty: (location = body, field = "items.*.qty") => {
         return location(field)
           .notEmpty()
-          .withMessage("Subtotal wajib.")
+          .withMessage("qty wajib.")
           .bail()
           .customSanitizer((value) => parseInt(value))
           .custom((value) => {
             if (value <= 0) {
-              throw new Error("Nilai subtotal tidak boleh 0 atau dibawahnya.");
+              throw new Error("Nilai qty tidak boleh 0 atau dibawahnya.");
             }
             return true;
           })
@@ -128,10 +128,10 @@ const PembelianValidators = {
 
             BaseValidatorHandleUndefined(barang, "Kode Barang");
 
-            const calculateSubtotal =
-              barang.hargaBeli * req[location].items[index].jumlahBeli;
+            const calculateQty =
+              barang.dibayar * req[location].items[index].kembali;
             if (calculateSubtotal !== value) {
-              return Promise.reject("Subtotal tidak valid.");
+              return Promise.reject("qty tidak valid.");
             }
 
             return Promise.resolve(true);
@@ -157,7 +157,7 @@ const PembelianValidators = {
       .custom((value, { req }) => {
         let total = 0;
         for (const item of req.body.items) {
-          total = total + item.subtotal;
+          total = total + item.qty;
         }
 
         if (total !== value) {
@@ -190,4 +190,4 @@ const PembelianValidators = {
   },
 };
 
-module.exports = PembelianValidators;
+module.exports = TransaksiValidators;
